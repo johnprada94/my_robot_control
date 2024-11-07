@@ -2,47 +2,53 @@
 
 import rospy
 import tf
-from tf.transformations import euler_from_quaternion
 import numpy as np
+from tf.transformations import euler_from_quaternion, quaternion_matrix, inverse_matrix
 
 def get_transform_matrix():
-    # Initialize the ROS node
     rospy.init_node('ur10_tf_listener')
-
-    # Initialize the TF listener
     listener = tf.TransformListener()
 
-    # Define the frames you want the transform from and to
-    source_frame = "base_link"  # Change this if you want another frame
-    target_frame = "tool0"   # End effector frame (you can change this)
+    source_frame = "base_link"
+    target_frame = "tool0"
 
     try:
-        # Wait for the transform to be available
         listener.waitForTransform(source_frame, target_frame, rospy.Time(0), rospy.Duration(4.0))
-
-        # Get the transform from source to target
         (trans, rot) = listener.lookupTransform(source_frame, target_frame, rospy.Time(0))
+        
+        # Construct transformation matrix from base to tool0
+        T_base_to_tool0 = np.eye(4)
+        T_base_to_tool0[0:3, 3] = trans
+        T_base_to_tool0[0:3, 0:3] = quaternion_matrix(rot)[0:3, 0:3]
 
-        # Convert the quaternion rotation into Euler angles
-        roll, pitch, yaw = euler_from_quaternion(rot)
-
-        # Print the translation and rotation
-        rospy.loginfo(f"Translation: {trans}")
-        rospy.loginfo(f"Rotation (Euler angles): roll={roll}, pitch={pitch}, yaw={yaw}")
-
-        # Construct a 4x4 transformation matrix
-        transform_matrix = np.eye(4)
-        transform_matrix[0:3, 3] = trans
-        transform_matrix[0:3, 0:3] = tf.transformations.quaternion_matrix(rot)[0:3, 0:3]
-
-        rospy.loginfo(f"Transform Matrix:\n{transform_matrix}")
-        return transform_matrix
+        rospy.loginfo(f"Transform Matrix (Base to Tool0):\n{T_base_to_tool0}")
+        return T_base_to_tool0
 
     except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
         rospy.logwarn("Could not get transform")
         return None
 
+def compute_marker_in_base_frame(T_base_to_tool0, T_cam_to_marker):
+    # Invert the camera-to-marker transform to get tool0-to-marker transform
+    T_tool0_to_marker = inverse_matrix(T_cam_to_marker)
+    
+    # Calculate marker's pose in the robot's base frame
+    T_base_to_marker = np.dot(T_base_to_tool0, T_tool0_to_marker)
+    
+    rospy.loginfo(f"Transform Matrix (Base to Marker):\n{T_base_to_marker}")
+    return T_base_to_marker
+
 if __name__ == "__main__":
-    transform_matrix = get_transform_matrix()
-    if transform_matrix is not None:
-        rospy.loginfo("Transformation matrix retrieved successfully.")
+    # Get the base-to-tool0 transformation
+    T_base_to_tool0 = get_transform_matrix()
+    
+    # Marker transform matrix in the camera frame
+    T_cam_to_marker = np.array([
+        [3.8274e-01, -9.1847e-01, -9.9595e-02, 1.7562e+02],
+        [3.2705e-01, 3.3880e-02, 9.4440e-01, -3.1659e+01],
+        [-8.6403e-01, -3.9404e-01, 3.1335e-01, 5.6075e+02],
+        [0, 0, 0, 1]
+    ])
+    
+    if T_base_to_tool0 is not None:
+        T_base_to_marker = compute_marker_in_base_frame(T_base_to_tool0, T_cam_to_marker)
