@@ -1,0 +1,9 @@
+# Ignore catkin build directories
+build/
+devel/
+log/
+.vscode/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
