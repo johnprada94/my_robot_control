@@ -113,29 +113,3 @@ if __name__ == "__main__":
     
     # Start the listener for /tcp_server_transforms topic
     listen_to_tcp_server_transforms()
-    
-    # Get the base-to-tool0 transformation
-    # T_base_to_tool0 = get_transform_matrix()
-    
-    # # Marker transform matrix in the camera frame
-    # T_cam_to_marker = np.array([
-    #     [3.8274e-01, -9.1847e-01, -9.9595e-02, 1.7562e+02],
-    #     [3.2705e-01, 3.3880e-02, 9.4440e-01, -3.1659e+01],
-    #     [-8.6403e-01, -3.9404e-01, 3.1335e-01, 5.6075e+02],
-    #     [0, 0, 0, 1]
-    # ])
-    
-    # # Object transform matrix in the camera frame
-    # T_cam_to_object = np.array([
-    #     [1.8463e-01, -7.2019e-01, 6.6875e-01, 3.0536e+02],
-    #     [-7.9878e-01, 2.8647e-01, 5.2904e-01, 3.6209e+02],
-    #     [-5.7259e-01, -6.3187e-01, -5.2239e-01, 1.4492e+03],
-    #     [0, 0, 0, 1]
-    # ])
-    
-    # if T_base_to_tool0 is not None:
-    #     # Step 1: Compute base-to-marker transformation
-    #     T_base_to_marker = compute_marker_in_base_frame(T_base_to_tool0, T_cam_to_marker)
-        
-    #     # Step 2: Compute base-to-object transformation using T_base_to_marker
-    #     T_base_to_object = compute_object_in_base_frame(T_base_to_marker, T_cam_to_object)
