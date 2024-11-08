@@ -35,12 +35,12 @@ def compute_marker_in_base_frame(T_base_to_tool0, T_cam_to_marker):
     # Calculate marker's pose in the robot's base frame
     T_base_to_marker = np.dot(T_base_to_tool0, T_tool0_to_marker)
     
-    rospy.loginfo(f"Transform Matrix (Base to Marker):\n{T_base_to_marker}")
+    # rospy.loginfo(f"Transform Matrix (Base to Marker):\n{T_base_to_marker}")
     return T_base_to_marker
 
-def compute_object_in_base_frame(T_base_to_marker, T_cam_to_object):
+def compute_object_in_base_frame(T_base_to_marker, T_cam_to_object,T_cam_to_marker):
     # Invert T_cam_to_object to get T_marker_to_camera
-    T_marker_to_camera = inverse_matrix(T_cam_to_object)
+    T_marker_to_camera = inverse_matrix(T_cam_to_marker)
     
     # Calculate T_base_to_camera using T_base_to_marker and T_marker_to_camera
     T_base_to_camera = np.dot(T_base_to_marker, T_marker_to_camera)
@@ -48,7 +48,7 @@ def compute_object_in_base_frame(T_base_to_marker, T_cam_to_object):
     # Calculate object's pose in the robot's base frame
     T_base_to_object = np.dot(T_base_to_camera, T_cam_to_object)
     
-    rospy.loginfo(f"Transform Matrix (Base to Object):\n{T_base_to_object}")
+    # rospy.loginfo(f"Transform Matrix (Base to Object):\n{T_base_to_object}")
     return T_base_to_object
 
 # Callback function to handle incoming String messages
@@ -95,7 +95,10 @@ def tcp_server_transform_callback(msg):
         T_base_to_marker = compute_marker_in_base_frame(T_base_to_tool0, T_cam_to_robot)
         
         # Step 2: Compute base-to-object transformation using T_base_to_marker
-        T_base_to_object = compute_object_in_base_frame(T_base_to_marker, T_cam_to_object)
+        T_base_to_object = compute_object_in_base_frame(T_base_to_marker, T_cam_to_object,T_cam_to_robot)
+        
+        rospy.loginfo(f"Transform Matrix (Base to Marker):\n{T_base_to_marker}")
+        rospy.loginfo(f"Transform Matrix (Base to Object):\n{T_base_to_object}")
 
 
 
