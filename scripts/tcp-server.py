@@ -20,10 +20,9 @@ latest_joint_positions = None
 def joint_positions_callback(msg):
     global latest_joint_positions
     latest_joint_positions = msg.data
-    # rospy.loginfo(f"Received joint positions from /ur10_joint_positions_in_degrees: {latest_joint_positions}")
 
 # Function to handle each client connection
-def handle_client(client_socket, client_address, publisher):
+def handle_client(client_socket, client_address, joint_publisher, transform_publisher):
     rospy.loginfo(f"Connection established with {client_address}")
     try:
         while not rospy.is_shutdown():
@@ -35,7 +34,6 @@ def handle_client(client_socket, client_address, publisher):
 
             # Check if the message is from the target IP address
             if client_address[0] == target_ip:
-                # Split the data assuming it's comma-separated (e.g., 'pos1,pos2,pos3,pos4,pos5,pos6,index')
                 values = data.split(',')
 
                 # Ensure we have exactly 7 values (6 joint positions and 1 index)
@@ -47,22 +45,23 @@ def handle_client(client_socket, client_address, publisher):
                     if index == 1:
                         # Convert joint positions to a string and publish to the ROS topic
                         joint_data = ','.join(joint_positions)
-                        publisher.publish(joint_data)
+                        joint_publisher.publish(joint_data)
                         rospy.loginfo(f"Published joint positions: {joint_data}")
                         client_socket.send("Acknowledged".encode('utf-8'))
 
                     elif index == 0:
-                        # If index is 0, check if we have latest joint positions from the subscriber
                         if latest_joint_positions is not None:
-                            # You can process or use the latest_joint_positions here
                             client_socket.send(latest_joint_positions.encode('utf-8'))
-                            rospy.loginfo(f"Received joint positions to listen for: {latest_joint_positions}")
                         else:
                             rospy.loginfo("No joint positions available from /ur10_joint_positions_in_degrees")
                 else:
                     rospy.logwarn("Received incorrect number of values")
             else:
-                rospy.loginfo(f"Ignored message from {client_address[0]}")
+                # Process transformation matrices for clients other than target IP
+                if "Robot:" in data and "Object:" in data:
+                    # Extract and publish the transformation matrices
+                    transform_publisher.publish(data)
+                    rospy.loginfo(f"Published transformation matrices:\n{data}")
 
             # Send a response back to the client
     except socket.error as e:
@@ -77,8 +76,9 @@ def tcp_server():
     server_ip = '10.8.2.105'  # Listen on all available interfaces
     server_port = 5016  # Choose an appropriate port
 
-    # Create a ROS publisher
-    publisher = rospy.Publisher('/tcp_server_data', String, queue_size=10)
+    # Create ROS publishers
+    joint_publisher = rospy.Publisher('/tcp_server_data', String, queue_size=10)
+    transform_publisher = rospy.Publisher('/tcp_server_transforms', String, queue_size=10)
 
     # Create a ROS subscriber
     rospy.Subscriber('/ur10_joint_positions_in_degrees', String, joint_positions_callback)
@@ -98,7 +98,7 @@ def tcp_server():
             rospy.loginfo(f"New connection from {client_address}")
             
             # Create a new thread to handle the client
-            client_thread = Thread(target=handle_client, args=(client_socket, client_address, publisher))
+            client_thread = Thread(target=handle_client, args=(client_socket, client_address, joint_publisher, transform_publisher))
             client_thread.start()
             client_threads.append(client_thread)
         except socket.error as e:
@@ -116,7 +116,6 @@ def tcp_server():
 # Signal handler for Ctrl+C
 def signal_handler(sig, frame):
     rospy.loginfo("Shutting down server...")
-    # Perform cleanup if necessary
     sys.exit(0)
 
 if __name__ == '__main__':
