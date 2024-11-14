@@ -193,9 +193,12 @@ class TrajectoryClient:
             "Executing trajectory using the {}".format(self.cartesian_trajectory_controller)
         )
         trajectory_client.send_goal(goal)
+
         trajectory_client.wait_for_result()
 
         result = trajectory_client.get_result()
+        rospy.loginfo("HOla {}".format(trajectory_client))
+
 
         rospy.loginfo("Trajectory execution finished in state {}".format(result.error_code))
 

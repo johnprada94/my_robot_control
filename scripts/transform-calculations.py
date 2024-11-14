@@ -4,17 +4,15 @@ import rospy
 import tf
 import numpy as np
 from std_msgs.msg import String
-from tf.transformations import euler_from_matrix, quaternion_matrix, inverse_matrix
-
+from tf.transformations import euler_from_matrix, quaternion_from_matrix, quaternion_matrix, inverse_matrix
 def get_cartesian_coordinates(T):
     # Extract position (translation)
     position = T[0:3, 3]
     
-    # Extract orientation (rotation) as Euler angles
-    rotation_matrix = T[0:3, 0:3]
-    euler_angles = euler_from_matrix(rotation_matrix)  # Returns roll, pitch, yaw
-    
-    return position, euler_angles
+    # Extract orientation (rotation) as a quaternion directly from the rotation matrix
+    quaternion = quaternion_from_matrix(T)
+
+    return position, quaternion
 
 def get_transform_matrix():
     listener = tf.TransformListener()
