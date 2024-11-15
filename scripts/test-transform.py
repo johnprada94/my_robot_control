@@ -3,7 +3,7 @@
 import rospy
 import tf
 from moveit_commander import MoveGroupCommander
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 
 def get_end_effector_transform():
     # Initialize the node
@@ -20,32 +20,18 @@ def get_end_effector_transform():
 
     rospy.loginfo("End effector pose (in base frame): %s", end_effector_pose)
 
-    # Initialize the TF listener to get the transform from the base frame
-    listener = tf.TransformListener()
+    # Convert PoseStamped to Pose for IK calculation
+    target_pose = Pose()
+    target_pose.position = end_effector_pose.pose.position
+    target_pose.orientation = end_effector_pose.pose.orientation
 
-    try:
-        # Wait for the transform to be available
-        listener.waitForTransform("base_link", end_effector_link, rospy.Time(0), rospy.Duration(4.0))
-
-        # Get the transform from base_link to the end effector
-        (trans, rot) = listener.lookupTransform("base_link", end_effector_link, rospy.Time(0))
-
-        # Print the transformation in terms of translation and rotation
-        rospy.loginfo("Transform from base_link to end effector:")
-        rospy.loginfo("Translation: %s", trans)
-        rospy.loginfo("Rotation: %s", rot)
-
-        return trans, rot
-    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-        rospy.logerr("Could not get transform from base_link to end effector")
-        return None, None
+    return target_pose
 
 if __name__ == '__main__':
     try:
-        trans, rot = get_end_effector_transform()
-        if trans and rot:
-            rospy.loginfo("End effector transform successfully calculated.")
-        else:
-            rospy.loginfo("Failed to calculate end effector transform.")
+        target_pose = get_end_effector_transform()
+
+        # Now, pass this target_pose to the IK script
+        rospy.loginfo("End effector target pose for IK: %s", target_pose)
     except rospy.ROSInterruptException:
         pass
