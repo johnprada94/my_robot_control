@@ -11,20 +11,20 @@ In robotics, a **transformation matrix** represents the position and orientation
 - **3x3 rotation matrix $R$**: Represents orientation.
 - **3x1 translation vector $t$**: Represents position.
 
-\[
+$$
 T = 
 \begin{bmatrix}
 R & t \\
 0 & 1
 \end{bmatrix}
-\]
+$$
 
 ### **Combining Transformations**
 To compute the pose of an object in the robot's base frame, the following relationship is used:
 
-\[
+$$
 T_{\text{base} \to \text{object}} = T_{\text{base} \to \text{ee}} \cdot T_{\text{ee} \to \text{camera}} \cdot T_{\text{camera} \to \text{object}}
-\]
+$$
 
 Where:
 - $$T_{\text{base} \to \text{ee}}$$: Pose of the end effector relative to the robot's base frame.
