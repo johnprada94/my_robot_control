@@ -63,13 +63,13 @@ if __name__ == '__main__':
     try:
         # Use the target pose from the first script
         target_pose = Pose()
-        target_pose.position.x = -0.5652704562589512
-        target_pose.position.y = 0.15990575084520037
-        target_pose.position.z = 0.854377784152791
-        target_pose.orientation.x = -0.6958702718409857
-        target_pose.orientation.y = -0.7008261676071723
-        target_pose.orientation.z = 0.11316735445600631
-        target_pose.orientation.w = 0.10862963431046353
+        target_pose.position.x = -0.6006932277273631
+        target_pose.position.y = 0.11638175435943776
+        target_pose.position.z = 0.3857985786079391
+        target_pose.orientation.x = 1.0 
+        target_pose.orientation.y = 0.0
+        target_pose.orientation.z = 0.0
+        target_pose.orientation.w = 0.0
 
         # Calculate the IK for the specified pose
         initial_positions, final_positions = calculate_ik(target_pose)
