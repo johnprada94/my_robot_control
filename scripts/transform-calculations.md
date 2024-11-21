@@ -27,7 +27,7 @@ T_{\text{base} \to \text{object}} = T_{\text{base} \to \text{ee}} \cdot T_{\text
 \]
 
 Where:
-- $T_{\text{base} \to \text{ee}}$: Pose of the end effector relative to the robot's base frame.
+- $$T_{\text{base} \to \text{ee}}$$: Pose of the end effector relative to the robot's base frame.
 - $T_{\text{ee} \to \text{camera}}$: Inverse of $T_{\text{camera} \to \text{ee}}$, transforming from the camera frame to the end-effector frame.
 - $T_{\text{camera} \to \text{object}}$: Pose of the object relative to the camera.
 
