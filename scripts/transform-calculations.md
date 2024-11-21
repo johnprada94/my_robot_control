@@ -22,9 +22,7 @@ R & t \\
 ### **Combining Transformations**
 To compute the pose of an object in the robot's base frame, the following relationship is used:
 
-\[
-T_{\text{base} \to \text{object}} = T_{\text{base} \to \text{ee}} \cdot T_{\text{ee} \to \text{camera}} \cdot T_{\text{camera} \to \text{object}}
-\]
+\[T_{\text{base} \to \text{object}} = T_{\text{base} \to \text{ee}} \cdot T_{\text{ee} \to \text{camera}} \cdot T_{\text{camera} \to \text{object}}\]
 
 Where:
 - \( T_{\text{base} \to \text{ee}} \): Pose of the end effector relative to the robot's base frame.
