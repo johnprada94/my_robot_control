@@ -43,4 +43,7 @@ In a new terminal, run the following command:
 ```bash
 roslaunch ur10_new demo.launch use_robot_state_publisher:=false
 
+
 ### **2. Start the transform and IK nodes**
+```bash
+rosrun my_robot_control transform-full.py

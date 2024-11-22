@@ -68,7 +68,7 @@ def calculate_object_pose(T_camera_to_object, T_camera_to_ee, T_base_to_ee):
     object_pose = Pose()
     object_pose.position.x = position[0]
     object_pose.position.y = position[1]
-    object_pose.position.z = position[2]
+    object_pose.position.z = position[2]+0.06  # Add 6 cm to the Z position
     object_pose.orientation = Quaternion(
         downward_orientation[0],
         downward_orientation[1],
