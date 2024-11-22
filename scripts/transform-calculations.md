@@ -42,8 +42,22 @@ The Z-axis of the calculated object pose is modified to ensure the end effector 
 In a new terminal, run the following command:
 ```bash
 roslaunch ur10_new demo.launch use_robot_state_publisher:=false
+```
 
-
-### **2. Start the transform and IK nodes**
+### **2. Start the transform node in a new terminal**
 ```bash
 rosrun my_robot_control transform-full.py
+```
+
+### **3. Start the IK node in a new terminal**
+
+```bash
+rosrun my_robot_control ur10-ik.py
+```
+
+### **4. Move the robot**
+
+```bash
+rosrun my_robot_control ur10-action.py
+```
+
