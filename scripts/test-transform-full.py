@@ -5,16 +5,21 @@ import numpy as np
 from moveit_commander import MoveGroupCommander
 from geometry_msgs.msg import Pose, Quaternion
 from tf.transformations import quaternion_matrix, translation_from_matrix, inverse_matrix, quaternion_from_matrix
+from std_msgs.msg import String
+
+# Initialize MoveGroupCommander once, outside of the function
+group = None
+end_effector_link = "tool0"
+object_pose_pub = None  # Declare the publisher variable
+
+def initialize_move_group():
+    global group
+    if group is None:
+        group = MoveGroupCommander("ur_10")  # Initialize once when the node starts
 
 def get_end_effector_transform():
-    # Initialize the node
-    rospy.init_node('end_effector_and_trackers_transform_node', anonymous=True)
-
-    # Initialize MoveGroup for the UR10 arm
-    group = MoveGroupCommander("ur_10")
-
-    # Define the end effector link as "tool0"
-    end_effector_link = "tool0"
+    # Ensure the MoveGroupCommander is initialized
+    initialize_move_group()
 
     # Get the current pose of the end effector (tool0) in the base frame
     end_effector_pose = group.get_current_pose(end_effector_link)
@@ -73,35 +78,97 @@ def calculate_object_pose(T_camera_to_object, T_camera_to_ee, T_base_to_ee):
 
     return object_pose
 
+def parse_transform_data(data):
+    """
+    Parse the incoming transformation string and extract the Robot and Object transformation matrices
+    using delimiters to split the data.
+    """
+
+    # Remove unnecessary newlines and extra spaces
+    cleaned_data = data.replace("\n", " ").strip()
+
+    # Split data based on the "Robot:" and "Object:" labels
+    robot_data = cleaned_data.split("Robot:")[1].split("Object:")[0].strip()
+    object_data = cleaned_data.split("Object:")[1].strip()
+
+    # Convert the data strings into matrices (4x4), skipping invalid entries
+    def convert_to_float_safe(data_str):
+        try:
+            return float(data_str)
+        except ValueError:
+            # If conversion fails, return None to skip this value
+            return None
+
+    T_camera_to_ee = []
+    for i in range(0, len(robot_data.split()), 4):
+        row = []
+        for value in robot_data.split()[i:i+4]:
+            converted_value = convert_to_float_safe(value)
+            if converted_value is not None:
+                row.append(converted_value)
+        if len(row) == 4:  # Ensure the row is complete before adding
+            T_camera_to_ee.append(row)
+
+    T_camera_to_object = []
+    for i in range(0, len(object_data.split()), 4):
+        row = []
+        for value in object_data.split()[i:i+4]:
+            converted_value = convert_to_float_safe(value)
+            if converted_value is not None:
+                row.append(converted_value)
+        if len(row) == 4:  # Ensure the row is complete before adding
+            T_camera_to_object.append(row)
+
+    # If either matrix is not 4x4, skip the data and return empty matrices
+    try:
+        T_camera_to_ee = np.array(T_camera_to_ee)
+        T_camera_to_object = np.array(T_camera_to_object)
+
+        # Check if both matrices are 4x4, otherwise raise an error
+        if T_camera_to_ee.shape != (4, 4) or T_camera_to_object.shape != (4, 4):
+            raise ValueError(f"Invalid shape: T_camera_to_ee={T_camera_to_ee.shape}, T_camera_to_object={T_camera_to_object.shape}")
+
+    except ValueError as e:
+        rospy.logwarn("Skipping invalid transform data due to shape mismatch: %s", e)
+        return None, None  # Return None to indicate the data is invalid
+
+    return T_camera_to_ee, T_camera_to_object
+
+
+def transform_callback(msg):
+    # Parse the transformation data from the incoming message
+    T_camera_to_ee, T_camera_to_object = parse_transform_data(msg.data)
+
+    # If the data is invalid, just return and wait for the next one
+    if T_camera_to_ee is None or T_camera_to_object is None:
+        return
+
+    # Convert translation components from mm to meters
+    T_camera_to_ee[:3, 3] /= 1000.0
+    T_camera_to_object[:3, 3] /= 1000.0
+
+    # Get the end effector transformation in the base frame
+    T_base_to_ee = get_end_effector_transform()
+
+    # Calculate the object's pose in the base frame
+    object_pose = calculate_object_pose(T_camera_to_object, T_camera_to_ee, T_base_to_ee)
+
+    rospy.loginfo("Object pose in base frame: %s", object_pose)
+
+    # Publish the object pose
+    object_pose_pub.publish(object_pose)
+
 if __name__ == '__main__':
     try:
-        # Define the provided transformation matrices
-        T_camera_to_ee = np.array([
-            [-7.5639e-01, -6.5388e-01, -1.7812e-02, 3.2952e+02],
-            [2.5999e-01, -3.2551e-01, 9.0909e-01, -5.7694e+01],
-            [-6.0023e-01, 6.8300e-01, 4.1621e-01, 7.3475e+02],
-            [0, 0, 0, 1.0000]
-        ])
+        # Initialize the node
+        rospy.init_node('end_effector_and_trackers_transform_node', anonymous=True)
 
-        T_camera_to_object = np.array([
-            [2.5122e-01, -1.6444e-01, -9.5386e-01, 2.7461e+02],
-            [-7.7373e-01, -6.2623e-01, -9.5822e-02, 3.0945e+02],
-            [-5.8158e-01, 7.6210e-01, -2.8455e-01, 1.0252e+03],
-            [0, 0, 0, 1.0000]
-        ])
+        # Create the publisher for the object pose
+        object_pose_pub = rospy.Publisher('/object_pose', Pose, queue_size=10)
 
-        # Convert translation components from mm to meters
-        T_camera_to_ee[:3, 3] /= 1000.0
-        T_camera_to_object[:3, 3] /= 1000.0
+        # Subscribe to the topic publishing transformation data
+        rospy.Subscriber("/tcp_server_transforms", String, transform_callback)
 
-        # Get the end effector transformation in the base frame
-        T_base_to_ee = get_end_effector_transform()
-
-        # Calculate the object's pose in the base frame
-        object_pose = calculate_object_pose(T_camera_to_object, T_camera_to_ee, T_base_to_ee)
-
-        rospy.loginfo("Object pose in base frame: %s", object_pose)
-
-        # Pass the `object_pose` to your robot's IK or pick-and-place function
+        rospy.spin()
     except rospy.ROSInterruptException:
         pass
