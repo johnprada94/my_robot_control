@@ -73,7 +73,7 @@ def handle_client(client_socket, client_address, joint_publisher, transform_publ
 # Main server function
 def tcp_server():
     rospy.init_node('tcp_server_node', anonymous=True)
-    server_ip = '10.8.2.240'  # Listen on all available interfaces
+    server_ip = '10.8.2.24'  # Listen on all available interfaces
     server_port = 5016  # Choose an appropriate port
 
     # Create ROS publishers
